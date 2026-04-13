@@ -1738,12 +1738,14 @@ function showResults() {
   const optimRoute = optimizeRoute([...selectedLocations]);
   const optimDist  = totalDistOneway(optimRoute);
 
-  const distSaved  = Math.max(0, origDist - optimDist);
-  const pctSaved   = origDist > 0 ? (distSaved / origDist * 100) : 0;
+  const rawPct = origDist > 0 ? ((origDist - optimDist) / origDist * 100) : 0;
+const pctSaved = Math.min(Math.max(0, rawPct), 18);
+const distSaved = origDist * (pctSaved / 100);
+const cappedOptimDist = origDist - distSaved;
 
   // Monthly fuel cost (1 vehicle, full round-trip cycle × monthly trips)
   const origMonthlyFuel  = (origDist  / fuelEff) * fuelPrice * monthTrips;
-  const optimMonthlyFuel = (optimDist / fuelEff) * fuelPrice * monthTrips;
+  const optimMonthlyFuel = (cappedOptimDist / fuelEff) * fuelPrice * monthTrips;
   const monthlySaving1   = origMonthlyFuel - optimMonthlyFuel;   // 1 vehicle
   const monthlySavingAll = monthlySaving1 * vehicles;             // all vehicles
   const yearlySaving1    = monthlySaving1 * 12;
