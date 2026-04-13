@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouteIQ — 부산 물류 경로 최적화</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2332;
+    --border: #1e2d42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --green: #00e5a0;
+    --red: #ff4757;
+    --text: #e8edf5;
+    --muted: #5a6a7e;
+    --card-bg: rgba(17,24,39,0.8);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glowing orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .orb2 {
+    position: fixed;
+    bottom: -150px; left: -150px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,107,53,0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Header */
+  header {
+    position: relative; z-index: 10;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    background: rgba(10,14,26,0.8);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .badge {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 32px;
+  }
+
+  .hstat {
+    text-align: center;
+  }
+
+  .hstat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .hstat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Main layout */
+  main {
+    position: relative; z-index: 5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 12px;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 .hl { color: var(--accent); }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Two-column layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+
+  .panel-icon.blue { background: rgba(0,212,255,0.12); }
+  .panel-icon.orange { background: rgba(255,107,53,0.12); }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .panel-body { padding: 20px 24px; }
+
+  /* Location list */
+  .location-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .location-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: grab;
+    transition: all 0.2s;
+    animation: slideIn 0.3s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .location-item:hover {
+    border-color: rgba(0,212,255,0.3);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .location-item.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+  }
+
+  .loc-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,212,255,0.15);
+    border: 1px solid rgba(0,212,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .loc-info { flex: 1; }
+
+  .loc-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .loc-sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .loc-type {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .loc-type.depot {
+    background: rgba(255,107,53,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(255,107,53,0.3);
+  }
+
+  .loc-type.stop {
+    background: rgba(0,212,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.2);
+  }
+
+  .loc-remove {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 4px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .loc-remove:hover { color: var(--red); }
+
+  /* Add location form */
+  .add-form {
+    display: flex;
+    gap: 8px;
+  }
+
+  .loc-select {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .loc-select:focus { border-color: var(--accent); }
+  .loc-select option { background: var(--surface); }
+
+  .btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-ghost {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-primary:hover {
+    background: #33dbff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,212,255,0.25);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-run {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+    color: var(--bg);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-run::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-run:hover::before { left: 100%; }
+
+  /* Vehicle config */
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .config-item label {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .config-item input, .config-item select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .config-item input:focus,
+  .config-item select:focus { border-color: var(--accent); }
+
+  /* Results area */
+  .results-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--muted);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  /* KPI cards */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .kpi-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .kpi-card.orange::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+
+  .kpi-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .kpi-value.blue { color: var(--accent); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.orange { color: var(--accent2); }
+
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .kpi-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--green);
+    background: rgba(0,229,160,0.1);
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-top: 5px;
+  }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  .compare-table thead tr {
+    border-bottom: 2px solid var(--border);
+  }
+
+  .compare-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .compare-table th.center { text-align: center; }
+
+  .compare-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(30,45,66,0.6);
+    vertical-align: middle;
+  }
+
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  .compare-table tr:hover td {
+    background: rgba(0,212,255,0.02);
+  }
+
+  .route-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
+  .route-badge.old {
+    background: rgba(255,71,87,0.1);
+    color: var(--red);
+    border: 1px solid rgba(255,71,87,0.2);
+  }
+
+  .route-badge.new {
+    background: rgba(0,229,160,0.1);
+    color: var(--green);
+    border: 1px solid rgba(0,229,160,0.2);
+  }
+
+  .route-stops {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .stop-chip {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+  }
+
+  .stop-chip.depot {
+    background: rgba(255,107,53,0.1);
+    border-color: rgba(255,107,53,0.3);
+    color: var(--accent2);
+  }
+
+  .arrow {
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+
+  .saving-cell {
+    color: var(--green);
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  .diff-negative {
+    color: var(--red);
+    font-size: 0.72rem;
+  }
+
+  .diff-positive {
+    color: var(--green);
+    font-size: 0.72rem;
+  }
+
+  /* Monthly savings */
+  .savings-banner {
+    background: linear-gradient(135deg, rgba(0,229,160,0.08) 0%, rgba(0,212,255,0.05) 100%);
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    animation: fadeUp 0.5s ease 0.2s both;
+  }
+
+  .savings-icon {
+    width: 56px; height: 56px;
+    background: rgba(0,229,160,0.12);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .savings-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .savings-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .savings-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .savings-breakdown {
+    margin-left: auto;
+    text-align: right;
+    display: grid;
+    gap: 8px;
+  }
+
+  .sbreak-item {
+    font-size: 0.78rem;
+  }
+
+  .sbreak-item .val {
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .sbreak-item .lbl {
+    color: var(--muted);
+    margin-left: 6px;
+  }
+
+  /* Route visualizer */
+  .route-viz {
+    padding: 16px 0 4px;
+  }
+
+  .viz-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .viz-track {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0;
+    padding-bottom: 4px;
+  }
+
+  .viz-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .viz-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  .viz-dot.depot {
+    background: rgba(255,107,53,0.2);
+    border: 2px solid var(--accent2);
+    color: var(--accent2);
+  }
+
+  .viz-dot.stop {
+    background: rgba(0,212,255,0.12);
+    border: 2px solid rgba(0,212,255,0.4);
+    color: var(--accent);
+  }
+
+  .viz-name {
+    font-size: 0.62rem;
+    color: var(--muted);
+    max-width: 52px;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .viz-line {
+    flex: 1;
+    height: 2px;
+    min-width: 20px;
+    background: linear-gradient(90deg, rgba(0,212,255,0.4), rgba(0,212,255,0.15));
+    margin-bottom: 20px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .viz-line::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: -3px;
+    width: 0; height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid rgba(0,212,255,0.5);
+  }
+
+  /* Loading */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,14,26,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(4px);
+  }
+
+  .loading-overlay.active { display: flex; }
+
+  .loader {
+    width: 48px; height: 48px;
+    border: 3px solid rgba(0,212,255,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Section 1: Optimal path steps ── */
+  .opt-path {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .opt-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .opt-step.first {
+    border-color: rgba(0,212,255,0.35);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .opt-step:hover { border-color: rgba(0,212,255,0.25); }
+
+  .opt-bubble {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(0,212,255,0.12);
+    border: 2px solid rgba(0,212,255,0.35);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .opt-step-info { flex: 1; }
+
+  .opt-step-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .opt-step-sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .opt-connector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    height: 28px;
+  }
+
+  .opt-line {
+    width: 2px;
+    height: 100%;
+    border-left: 2px dashed rgba(0,212,255,0.2);
+    margin-left: 13px; /* align with bubble center */
+  }
+
+  .opt-dist {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-left: 26px;
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  /* Info pills */
+  .info-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.73rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .info-pill strong { color: var(--text); }
+  .info-pill.blue { border-color: rgba(0,212,255,0.25); color: var(--accent); }
+  .info-pill.blue strong { color: var(--accent); }
+  .info-pill.green { border-color: rgba(0,229,160,0.25); color: var(--green); }
+  .info-pill.green strong { color: var(--green); }
+
+  /* ── Section 2: Compare routes ── */
+  .compare-routes {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .cr-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cr-label { flex-shrink: 0; padding-top: 2px; }
+
+  .cr-stops {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+  }
+
+  /* ── Section 3: Highlight box ── */
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(0,229,160,0.07) 0%, rgba(0,212,255,0.05) 60%, rgba(255,107,53,0.04) 100%);
+    border: 1px solid rgba(0,229,160,0.25);
+    border-radius: 16px;
+    padding: 26px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .highlight-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--accent), var(--accent2));
+  }
+
+  .hb-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    margin-bottom: 20px;
+  }
+
+  .hb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 24px;
+    align-items: center;
+  }
+
+  @media (max-width: 700px) {
+    .hb-grid { grid-template-columns: 1fr; }
+  }
+
+  .hb-main {
+    text-align: center;
+    padding: 20px;
+    background: rgba(0,229,160,0.06);
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 12px;
+  }
+
+  .hb-main-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(0,229,160,0.7);
+    margin-bottom: 8px;
+  }
+
+  .hb-main-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .hb-main-badge {
+    display: inline-block;
+    background: rgba(0,229,160,0.15);
+    border: 1px solid rgba(0,229,160,0.3);
+    color: var(--green);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .hb-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hb-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .hb-stat-item.hb-highlight {
+    background: rgba(0,229,160,0.05);
+    border-color: rgba(0,229,160,0.25);
+  }
+
+  .hb-stat-item:hover { border-color: rgba(0,212,255,0.25); }
+
+  .hb-stat-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+  .hb-stat-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .hb-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--green);
+  }
+
+  /* ── Section 4: Vehicle slider ── */
+  .slider-box {
+    background: linear-gradient(135deg, rgba(17,24,39,0.95) 0%, rgba(26,35,50,0.9) 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slider-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+  }
+
+  .slider-header { margin-bottom: 24px; }
+
+  .slider-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .slider-icon { font-size: 1.4rem; }
+
+  .slider-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .slider-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-left: 34px;
+  }
+
+  /* Slider track */
+  .slider-track-wrap {
+    position: relative;
+    margin-bottom: 28px;
+    padding-top: 18px;
+  }
+
+  .slider-labels-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.62rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    padding: 0 2px;
+  }
+
+  .vehicle-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+  }
+
+  .vehicle-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0,212,255,0.15), 0 2px 8px rgba(0,212,255,0.4);
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+
+  .vehicle-slider::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(0,212,255,0.2), 0 2px 12px rgba(0,212,255,0.5);
+    transform: scale(1.1);
+  }
+
+  .vehicle-slider::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+  }
+
+  /* Dynamic filled track via JS-set gradient */
+  .slider-thumb-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: left 0.05s;
+    z-index: 3;
+  }
+
+  .slider-thumb-label::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--accent);
+    border-bottom: none;
+  }
+
+  /* Result display */
+  .slider-result {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .sr-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .sr-vehicle-count {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .sr-vehicle-count span {
+    font-size: 1.5rem;
+    color: var(--accent);
+  }
+
+  .sr-arrow {
+    font-size: 1.4rem;
+    color: var(--muted);
+  }
+
+  .sr-saving-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .sr-saving-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    transition: all 0.15s;
+  }
+
+  .sr-right {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .sr-stat {
+    padding: 0 18px;
+    text-align: center;
+  }
+
+  .sr-stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .sr-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .sr-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  /* Bar chart */
+  .slider-bar-chart { margin-top: 4px; }
+
+  .sbc-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .sbc-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 90px;
+  }
+
+  .sbc-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    height: 100%;
+  }
+
+  .sbc-val {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-weight: 600;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+
+  .sbc-val.active { color: var(--green); }
+
+  .sbc-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .sbc-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    background: var(--border);
+    transition: height 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.2s;
+    min-height: 4px;
+  }
+
+  .sbc-bar.active {
+    background: linear-gradient(180deg, var(--green) 0%, rgba(0,229,160,0.5) 100%);
+    box-shadow: 0 0 12px rgba(0,229,160,0.3);
+  }
+
+  .sbc-tick {
+    font-size: 0.65rem;
+    color: var(--muted);
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+
+  .sbc-tick.active {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="orb2"></div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader"></div>
+  <div class="loading-text">경로 최적화 알고리즘 실행 중...</div>
+</div>
+
+<header>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <div class="logo">Route<span>IQ</span></div>
+    <div class="badge">부산 물류 특화</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-val" id="hTotalRoutes">0</div>
+      <div class="hstat-label">오늘 최적화</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="hTotalSaved">₩0</div>
+      <div class="hstat-label">누적 절감</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val">A.I.</div>
+      <div class="hstat-label">엔진 상태</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-tag">▸ AI 기반 경로 최적화</div>
+    <h1>부산 물류 경로를<br><span class="hl">최적화</span>하세요</h1>
+    <p>출발지·경유지·도착지를 설정하면 최단거리 알고리즘으로 최적 순서를 계산하고 연료비 절감 효과를 분석합니다.</p>
+  </div>
+
+  <div class="layout">
+    <!-- Left: Input Panel -->
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <div class="panel-icon blue">📍</div>
+          <div class="panel-title">배송 거점 설정</div>
+        </div>
+        <div class="panel-body">
+          <div class="section-title">경유지 목록</div>
+          <ul class="location-list" id="locationList"></ul>
+
+          <div class="add-form">
+            <select class="loc-select" id="locationSelect">
+              <option value="">거점 선택...</option>
+              <optgroup label="🏭 물류단지">
+                <option value="강서구물류단지">강서구 물류단지</option>
+                <option value="신호산업단지">신호산업단지</option>
+                <option value="녹산국가산업단지">녹산국가산단</option>
+                <option value="명지물류센터">명지 물류센터</option>
+              </optgroup>
+              <optgroup label="🚢 항만/부두">
+                <option value="부산신항">부산신항</option>
+                <option value="북항컨테이너터미널">북항 컨테이너터미널</option>
+                <option value="감천항">감천항</option>
+                <option value="다대포항">다대포항</option>
+              </optgroup>
+              <optgroup label="🏪 배송거점">
+                <option value="해운대물류센터">해운대 물류센터</option>
+                <option value="사하구배송센터">사하구 배송센터</option>
+                <option value="사상구허브">사상구 허브</option>
+                <option value="동래구배송">동래구 배송센터</option>
+                <option value="기장군물류">기장군 물류센터</option>
+                <option value="남구물류">남구 배송센터</option>
+                <option value="수영구거점">수영구 거점</option>
+              </optgroup>
+            </select>
+            <button class="btn btn-ghost" onclick="addLocation()">추가</button>
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-title">차량 설정</div>
+          <div class="config-grid">
+            <div class="config-item">
+              <label>차량 수</label>
+              <input type="number" id="vehicleCount" value="3" min="1" max="10">
+            </div>
+            <div class="config-item">
+              <label>연비 (km/L)</label>
+              <input type="number" id="fuelEfficiency" value="8.5" step="0.1">
+            </div>
+            <div class="config-item">
+              <label>유가 (원/L)</label>
+              <input type="number" id="fuelPrice" value="1680">
+            </div>
+            <div class="config-item">
+              <label>운행 횟수/월</label>
+              <input type="number" id="monthlyTrips" value="22">
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-run" onclick="runOptimization()">
+            ⚡ 경로 최적화 실행
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Results -->
+    <div class="results-area" id="resultsArea">
+      <div class="panel">
+        <div class="panel-body">
+          <div class="empty-state">
+            <div class="empty-icon">🗺️</div>
+            <p>거점을 3개 이상 추가하고<br><strong style="color:var(--text)">경로 최적화 실행</strong>을 클릭하면<br>분석 결과가 여기에 표시됩니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ─── Data ───────────────────────────────────────────────────────────────────
+
+// ─── Locations: real-road-distance calibrated coords ────────────────────────
+// 부산 실제 도로 거리 반영:
+//   강서구(신항권) ↔ 해운대  ≈ 38~42km
+//   강서구 ↔ 동래·기장       ≈ 45~55km
+//   사하구 ↔ 해운대          ≈ 28~33km
+//   북항 ↔ 기장군            ≈ 35~40km
+// lng 간격을 실제 도로 격차에 맞게 분산 배치
+const LOCATIONS = {
+  // 서부권 (강서·사하) — lng 128.82~128.98
+  "부산신항":              { lat: 35.073, lng: 128.820, district: "강서구", type: "port"   },
+  "녹산국가산업단지":      { lat: 35.070, lng: 128.843, district: "강서구", type: "depot"  },
+  "신호산업단지":          { lat: 35.081, lng: 128.858, district: "강서구", type: "depot"  },
+  "강서구물류단지":        { lat: 35.103, lng: 128.876, district: "강서구", type: "depot"  },
+  "명지물류센터":          { lat: 35.094, lng: 128.897, district: "강서구", type: "hub"    },
+  "다대포항":              { lat: 35.047, lng: 128.961, district: "사하구", type: "port"   },
+  "감천항":                { lat: 35.072, lng: 128.992, district: "사하구", type: "port"   },
+  "사하구배송센터":        { lat: 35.098, lng: 128.969, district: "사하구", type: "center" },
+
+  // 중부권 (사상·북항) — lng 129.00~129.06
+  "사상구허브":            { lat: 35.148, lng: 129.004, district: "사상구", type: "hub"    },
+  "북항컨테이너터미널":    { lat: 35.118, lng: 129.040, district: "중구",   type: "port"   },
+
+  // 동부권 (남구·동래·수영·해운대·기장) — lng 129.06~129.22
+  "남구물류":              { lat: 35.131, lng: 129.074, district: "남구",   type: "center" },
+  "동래구배송":            { lat: 35.194, lng: 129.084, district: "동래구", type: "center" },
+  "수영구거점":            { lat: 35.144, lng: 129.118, district: "수영구", type: "hub"    },
+  "해운대물류센터":        { lat: 35.162, lng: 129.162, district: "해운대구", type: "center"},
+  "기장군물류":            { lat: 35.243, lng: 129.213, district: "기장군", type: "center" },
+};
+
+const TYPE_LABELS = { depot: "물류단지", port: "항만", hub: "허브", center: "배송센터" };
+const TYPE_EMOJI  = { depot: "🏭", port: "🚢", hub: "🔄", center: "📦" };
+
+let selectedLocations = [];
+let optimizationCount = 0;
+let totalSaved = 0;
+
+// ─── Road-distance matrix (km) — asymmetric real distances ──────────────────
+// 직선거리 × 도로계수(1.35~1.55) 적용. 없으면 Haversine fallback.
+const ROAD = (() => {
+  const pairs = [
+    ["부산신항","녹산국가산업단지",5],["부산신항","신호산업단지",8],
+    ["부산신항","강서구물류단지",14],["부산신항","명지물류센터",11],
+    ["부산신항","다대포항",22],["부산신항","감천항",28],
+    ["부산신항","사하구배송센터",30],["부산신항","사상구허브",42],
+    ["부산신항","북항컨테이너터미널",46],["부산신항","남구물류",47],
+    ["부산신항","동래구배송",51],["부산신항","수영구거점",50],
+    ["부산신항","해운대물류센터",56],["부산신항","기장군물류",68],
+
+    ["녹산국가산업단지","신호산업단지",5],["녹산국가산업단지","강서구물류단지",11],
+    ["녹산국가산업단지","명지물류센터",9],["녹산국가산업단지","다대포항",20],
+    ["녹산국가산업단지","감천항",27],["녹산국가산업단지","사하구배송센터",29],
+    ["녹산국가산업단지","사상구허브",40],["녹산국가산업단지","북항컨테이너터미널",44],
+    ["녹산국가산업단지","남구물류",45],["녹산국가산업단지","해운대물류센터",54],
+    ["녹산국가산업단지","기장군물류",67],
+
+    ["신호산업단지","강서구물류단지",8],["신호산업단지","명지물류센터",7],
+    ["신호산업단지","다대포항",19],["신호산업단지","감천항",25],
+    ["신호산업단지","사하구배송센터",27],["신호산업단지","사상구허브",38],
+    ["신호산업단지","북항컨테이너터미널",42],["신호산업단지","해운대물류센터",52],
+    ["신호산업단지","기장군물류",65],
+
+    ["강서구물류단지","명지물류센터",7],["강서구물류단지","다대포항",22],
+    ["강서구물류단지","감천항",24],["강서구물류단지","사하구배송센터",22],
+    ["강서구물류단지","사상구허브",30],["강서구물류단지","북항컨테이너터미널",38],
+    ["강서구물류단지","남구물류",40],["강서구물류단지","동래구배송",43],
+    ["강서구물류단지","수영구거점",44],["강서구물류단지","해운대물류센터",48],
+    ["강서구물류단지","기장군물류",62],
+
+    ["명지물류센터","다대포항",19],["명지물류센터","감천항",22],
+    ["명지물류센터","사하구배송센터",21],["명지물류센터","사상구허브",30],
+    ["명지물류센터","북항컨테이너터미널",36],["명지물류센터","해운대물류센터",46],
+
+    ["다대포항","감천항",11],["다대포항","사하구배송센터",14],
+    ["다대포항","사상구허브",28],["다대포항","북항컨테이너터미널",34],
+    ["다대포항","남구물류",35],["다대포항","해운대물류센터",42],
+    ["다대포항","기장군물류",55],
+
+    ["감천항","사하구배송센터",8],["감천항","사상구허브",21],
+    ["감천항","북항컨테이너터미널",24],["감천항","남구물류",26],
+    ["감천항","동래구배송",30],["감천항","수영구거점",29],
+    ["감천항","해운대물류센터",35],["감천항","기장군물류",48],
+
+    ["사하구배송센터","사상구허브",19],["사하구배송센터","북항컨테이너터미널",22],
+    ["사하구배송센터","남구물류",24],["사하구배송센터","동래구배송",28],
+    ["사하구배송센터","수영구거점",27],["사하구배송센터","해운대물류센터",33],
+    ["사하구배송센터","기장군물류",46],
+
+    ["사상구허브","북항컨테이너터미널",14],["사상구허브","남구물류",17],
+    ["사상구허브","동래구배송",19],["사상구허브","수영구거점",20],
+    ["사상구허브","해운대물류센터",26],["사상구허브","기장군물류",40],
+
+    ["북항컨테이너터미널","남구물류",9],["북항컨테이너터미널","동래구배송",15],
+    ["북항컨테이너터미널","수영구거점",14],["북항컨테이너터미널","해운대물류센터",20],
+    ["북항컨테이너터미널","기장군물류",34],
+
+    ["남구물류","동래구배송",13],["남구물류","수영구거점",10],
+    ["남구물류","해운대물류센터",16],["남구물류","기장군물류",30],
+
+    ["동래구배송","수영구거점",11],["동래구배송","해운대물류센터",17],
+    ["동래구배송","기장군물류",25],
+
+    ["수영구거점","해운대물류센터",10],["수영구거점","기장군물류",24],
+    ["해운대물류센터","기장군물류",17],
+  ];
+  const m = {};
+  pairs.forEach(([a,b,d]) => {
+    m[a] = m[a]||{}; m[b] = m[b]||{};
+    m[a][b] = d; m[b][a] = d;
+  });
+  return m;
+})();
+
+// ─── Distance lookup: road matrix first, Haversine fallback ─────────────────
+function dist(a, b) {
+  if (ROAD[a] && ROAD[a][b] != null) return ROAD[a][b];
+  // Haversine × road factor 1.42
+  const la = LOCATIONS[a], lb = LOCATIONS[b];
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lb.lat - la.lat), dLng = toRad(lb.lng - la.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(toRad(la.lat)) * Math.cos(toRad(lb.lat)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(h)) * 1.42;
+}
+
+// ─── Distance helpers ────────────────────────────────────────────────────────
+// 편도: A→B→C→...→Z  (표시용 — 기존/최적 모두 동일 기준)
+function totalDistOneway(route) {
+  let d = 0;
+  for (let i = 0; i < route.length - 1; i++)
+    d += dist(route[i], route[i + 1]);
+  return d;
+}
+
+// 왕복(순환): A→B→...→Z→A  (TSP 내부 최적화용)
+function totalDist(route) {
+  return totalDistOneway(route) + dist(route[route.length - 1], route[0]);
+}
+
+// ─── TSP: nearest-neighbour seeded from best start + 2-opt improvement ───────
+function nearestNeighbour(locs, startIdx) {
+  const visited = new Set([startIdx]);
+  const result = [locs[startIdx]];
+  while (result.length < locs.length) {
+    const last = result[result.length - 1];
+    let best = -1, bestD = Infinity;
+    locs.forEach((l, i) => {
+      if (!visited.has(i)) {
+        const d = dist(last, l);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+    });
+    visited.add(best);
+    result.push(locs[best]);
+  }
+  return result;
+}
+
+function twoOpt(route) {
+  let improved = true;
+  let best = [...route];
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let j = i + 2; j < best.length; j++) {
+        if (j === best.length - 1 && i === 0) continue;
+        // reverse segment [i+1..j]
+        const candidate = [
+          ...best.slice(0, i + 1),
+          ...best.slice(i + 1, j + 1).reverse(),
+          ...best.slice(j + 1)
+        ];
+        if (totalDist(candidate) < totalDist(best) - 0.001) {
+          best = candidate;
+          improved = true;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+function optimizeRoute(locs) {
+  // Try NN from every start index, keep best, then apply 2-opt
+  let bestRoute = null, bestDist = Infinity;
+  locs.forEach((_, i) => {
+    const candidate = nearestNeighbour(locs, i);
+    const d = totalDist(candidate);
+    if (d < bestDist) { bestDist = d; bestRoute = candidate; }
+  });
+  // 2-opt pass
+  const improved = twoOpt(bestRoute);
+  // Rotate so original depot (locs[0]) stays first
+  const depot = locs[0];
+  const idx = improved.indexOf(depot);
+  return [...improved.slice(idx), ...improved.slice(0, idx)];
+}
+
+// ─── UI helpers ─────────────────────────────────────────────────────────────
+function renderList() {
+  const ul = document.getElementById('locationList');
+  ul.innerHTML = '';
+  selectedLocations.forEach((name, i) => {
+    const loc = LOCATIONS[name];
+    const li = document.createElement('li');
+    li.className = 'location-item';
+    li.dataset.index = i;
+    li.innerHTML = `
+      <div class="loc-num">${i+1}</div>
+      <div class="loc-info">
+        <div class="loc-name">${TYPE_EMOJI[loc.type]} ${name}</div>
+        <div class="loc-sub">${loc.district}</div>
+      </div>
+      <span class="loc-type ${i===0?'depot':'stop'}">${i===0?'출발':'경유'}</span>
+      <button class="loc-remove" onclick="removeLocation(${i})">×</button>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+function addLocation() {
+  const sel = document.getElementById('locationSelect');
+  const val = sel.value;
+  if (!val) return;
+  if (selectedLocations.includes(val)) {
+    sel.style.borderColor = 'var(--red)';
+    setTimeout(() => sel.style.borderColor = '', 800);
+    return;
+  }
+  selectedLocations.push(val);
+  sel.value = '';
+  renderList();
+}
+
+function removeLocation(i) {
+  selectedLocations.splice(i, 1);
+  renderList();
+}
+
+// ─── Button handler ──────────────────────────────────────────────────────────
+function runOptimization() {
+  if (selectedLocations.length < 3) {
+    alert('거점을 최소 3개 이상 추가해주세요.');
+    return;
+  }
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.add('active');
+  setTimeout(() => {
+    overlay.classList.remove('active');
+    showResults();
+  }, 1400);
+}
+
+function showResults() {
+  const fuelEff    = parseFloat(document.getElementById('fuelEfficiency').value) || 8.5;
+  const fuelPrice  = parseFloat(document.getElementById('fuelPrice').value) || 1680;
+  const vehicles   = parseInt(document.getElementById('vehicleCount').value) || 3;
+  const monthTrips = parseInt(document.getElementById('monthlyTrips').value) || 22;
+
+  // Original route: 사용자 입력 순서 그대로, 편도 합산
+  const originalRoute = [...selectedLocations];
+  const origDist      = totalDistOneway(originalRoute);
+
+  // Optimised: multi-start NN + 2-opt (TSP 내부는 순환 거리로 최적화, 표시는 편도)
+  const optimRoute = optimizeRoute([...selectedLocations]);
+  const optimDist  = totalDistOneway(optimRoute);
+
+  const distSaved  = Math.max(0, origDist - optimDist);
+  const pctSaved   = origDist > 0 ? (distSaved / origDist * 100) : 0;
+
+  // Monthly fuel cost (1 vehicle, full round-trip cycle × monthly trips)
+  const origMonthlyFuel  = (origDist  / fuelEff) * fuelPrice * monthTrips;
+  const optimMonthlyFuel = (optimDist / fuelEff) * fuelPrice * monthTrips;
+  const monthlySaving1   = origMonthlyFuel - optimMonthlyFuel;   // 1 vehicle
+  const monthlySavingAll = monthlySaving1 * vehicles;             // all vehicles
+  const yearlySaving1    = monthlySaving1 * 12;
+  const yearlySavingAll  = monthlySavingAll * 12;
+
+  const resultsArea = document.getElementById('resultsArea');
+  resultsArea.innerHTML = '';
+
+  // ═══════════════════════════════════════════════════════════
+  // SECTION 1 · 최적 경로 순서
+  // ═══════════════════════════════════════════════════════════
+  const sec1 = document.createElement('div');
+  sec1.className = 'panel';
+  sec1.style.animation = 'fadeUp 0.4s ease both';
+  sec1.innerHTML = `
+    <div class="panel-header">
+      <div class="panel-icon blue">🗺️</div>
+      <div class="panel-title">① 최적 경로 순서</div>
+      <span style="margin-left:auto;font-size:0.7rem;color:var(--muted)">AI 최단거리 알고리즘 적용</span>
+    </div>
+    <div class="panel-body">
+      <!-- Step-by-step path -->
+      <div class="opt-path">
+        ${optimRoute.map((name, i) => {
+          const loc = LOCATIONS[name];
+          const isFirst = i === 0;
+          const isLast  = i === optimRoute.length - 1;
+          return `
+            ${i > 0 ? `
+              <div class="opt-connector">
+                <div class="opt-line"></div>
+                <div class="opt-dist">${dist(optimRoute[i-1], name).toFixed(1)}km</div>
+              </div>` : ''}
+            <div class="opt-step ${isFirst ? 'first' : ''}">
+              <div class="opt-bubble">${isFirst ? '▶' : i}</div>
+              <div class="opt-step-info">
+                <div class="opt-step-name">${name}</div>
+                <div class="opt-step-sub">${loc.district} · ${{ depot:'물류단지', port:'항만', hub:'허브', center:'배송센터' }[loc.type]}</div>
+              </div>
+              ${isFirst ? '<span class="loc-type depot" style="margin-left:auto">출발·도착</span>' :
+                isLast  ? '<span class="loc-type stop"  style="margin-left:auto">마지막 경유</span>' :
+                          '<span class="loc-type stop"  style="margin-left:auto">경유</span>'}
+            </div>
+          `;
+        }).join('')}
+        <!-- 편도 종착 표시 -->
+        <div class="opt-connector">
+          <div class="opt-line" style="border-color:rgba(0,212,255,0.1)"></div>
+          <div class="opt-dist" style="color:var(--muted)">편도 종착</div>
+        </div>
+        <div class="opt-step" style="opacity:0.4">
+          <div class="opt-bubble" style="background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);color:var(--muted)">■</div>
+          <div class="opt-step-info">
+            <div class="opt-step-name" style="color:var(--muted)">배송 완료</div>
+            <div class="opt-step-sub">편도 기준 거리 계산</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total distance pill -->
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <div class="info-pill blue">최적 경로 편도 <strong>${optimDist.toFixed(1)}km</strong></div>
+        <div class="info-pill green">기존 대비 <strong>${distSaved.toFixed(1)}km (${pctSaved.toFixed(1)}%) 단축</strong></div>
+        <div class="info-pill">경유지 <strong>${optimRoute.length}개소</strong></div>
+      </div>
+    </div>
+  `;
+  resultsArea.appendChild(sec1);
+
+  // ═══════════════════════════════════════════════════════════
+  // SECTION 2 · 기존 vs 최적 비교표
+  // ═══════════════════════════════════════════════════════════
+  const sec2 = document.createElement('div');
+  sec2.className = 'panel';
+  sec2.style.animation = 'fadeUp 0.4s ease 0.1s both';
+  sec2.innerHTML = `
+    <div class="panel-header">
+      <div class="panel-icon blue">📊</div>
+      <div class="panel-title">② 기존 경로 vs 최적화 경로 비교</div>
+    </div>
+    <div class="panel-body">
+
+      <!-- Route sequence rows -->
+      <div class="compare-routes">
+        <div class="cr-row">
+          <div class="cr-label"><span class="route-badge old">기존 경로</span></div>
+          <div class="cr-stops">
+            ${originalRoute.map((s,i) => `${i>0?'<span class="arrow">→</span>':''}<span class="stop-chip ${i===0?'depot':''}">${s}</span>`).join('')}
+            <span class="arrow">↩</span>
+          </div>
+        </div>
+        <div class="cr-row" style="margin-top:10px">
+          <div class="cr-label"><span class="route-badge new">최적 경로</span></div>
+          <div class="cr-stops">
+            ${optimRoute.map((s,i) => `${i>0?'<span class="arrow">→</span>':''}<span class="stop-chip ${i===0?'depot':''}">${s}</span>`).join('')}
+            <span class="arrow">↩</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:18px 0"></div>
+
+      <!-- Numbers comparison table -->
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th class="center">기존 경로</th>
+            <th class="center">최적화 경로</th>
+            <th class="center">절감 효과</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem">총 운행 거리 <span style="font-size:0.68rem">(편도)</span></td>
+            <td class="center" style="font-weight:600">${origDist.toFixed(1)} km</td>
+            <td class="center" style="color:var(--green);font-weight:700">${optimDist.toFixed(1)} km</td>
+            <td class="center"><span class="diff-positive">▼ ${distSaved.toFixed(1)}km (${pctSaved.toFixed(1)}%)</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem">월 연료비 <span style="font-size:0.7rem">(차량 1대)</span></td>
+            <td class="center" style="font-weight:600">₩${Math.round(origMonthlyFuel).toLocaleString()}</td>
+            <td class="center" style="color:var(--green);font-weight:700">₩${Math.round(optimMonthlyFuel).toLocaleString()}</td>
+            <td class="center saving-cell">▼ ₩${Math.round(monthlySaving1).toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem">월 연료비 <span style="font-size:0.7rem">(차량 ${vehicles}대)</span></td>
+            <td class="center" style="font-weight:600">₩${Math.round(origMonthlyFuel * vehicles).toLocaleString()}</td>
+            <td class="center" style="color:var(--green);font-weight:700">₩${Math.round(optimMonthlyFuel * vehicles).toLocaleString()}</td>
+            <td class="center saving-cell">▼ ₩${Math.round(monthlySavingAll).toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem">연간 연료비 <span style="font-size:0.7rem">(차량 ${vehicles}대)</span></td>
+            <td class="center" style="font-weight:600">₩${Math.round(origMonthlyFuel * vehicles * 12).toLocaleString()}</td>
+            <td class="center" style="color:var(--green);font-weight:700">₩${Math.round(optimMonthlyFuel * vehicles * 12).toLocaleString()}</td>
+            <td class="center saving-cell">▼ ₩${Math.round(yearlySavingAll).toLocaleString()}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;font-size:0.7rem;color:var(--muted)">
+        * 거리는 편도 기준 · 연비 ${fuelEff}km/L · 유가 ₩${fuelPrice.toLocaleString()}/L · 월 ${monthTrips}회 운행 기준
+      </div>
+    </div>
+  `;
+  resultsArea.appendChild(sec2);
+
+  // ═══════════════════════════════════════════════════════════
+  // SECTION 3 · 절감 효과 요약 (현실적 프레이밍)
+  // ═══════════════════════════════════════════════════════════
+  const yearly1v   = yearlySaving1;                       // 1대 연간
+  const yearly_all = yearlySavingAll;                     // N대 연간
+  const y5_all     = yearlySavingAll * 5;                 // N대 5년
+
+  const sec3 = document.createElement('div');
+  sec3.style.animation = 'fadeUp 0.4s ease 0.2s both';
+  sec3.innerHTML = `
+    <div class="highlight-box">
+      <div class="hb-title">💡 절감 효과 요약</div>
+      <div class="hb-grid">
+
+        <!-- Left: 1대 기준 기초값 -->
+        <div class="hb-main">
+          <div class="hb-main-label">차량 1대 · 월 절감액</div>
+          <div class="hb-main-value">₩${Math.round(monthlySaving1).toLocaleString()}</div>
+          <div class="hb-main-badge">${pctSaved.toFixed(1)}%↓ 연료비 절감</div>
+          <div style="margin-top:12px;font-size:0.7rem;color:rgba(0,229,160,0.6);line-height:1.6">
+            차량 1대 연간<br>
+            <strong style="color:var(--green);font-size:0.95rem">₩${Math.round(yearly1v).toLocaleString()}</strong>
+          </div>
+        </div>
+
+        <!-- Right: 규모 확대 스택 -->
+        <div class="hb-stats">
+          <div class="hb-stat-item">
+            <div class="hb-stat-icon">🚛</div>
+            <div style="flex:1">
+              <div class="hb-stat-label">차량 ${vehicles}대 · 연간 절감</div>
+              <div class="hb-stat-val">₩${Math.round(yearly_all).toLocaleString()}</div>
+            </div>
+            <div style="font-size:0.68rem;color:var(--muted);text-align:right;line-height:1.4">
+              월 ₩${Math.round(monthlySavingAll).toLocaleString()}<br>× 12개월
+            </div>
+          </div>
+          <div class="hb-stat-item hb-highlight">
+            <div class="hb-stat-icon">📆</div>
+            <div style="flex:1">
+              <div class="hb-stat-label">차량 ${vehicles}대 · <strong style="color:var(--green)">5년 누적 절감</strong></div>
+              <div class="hb-stat-val" style="font-size:1.35rem">
+                ₩${y5_all >= 100000000
+                    ? (y5_all / 100000000).toFixed(2) + '억원'
+                    : Math.round(y5_all / 10000).toLocaleString() + '만원'}
+              </div>
+            </div>
+            <div style="font-size:0.68rem;color:rgba(0,229,160,0.6);text-align:right;line-height:1.4">
+              연 ₩${Math.round(yearly_all / 10000).toLocaleString()}만<br>× 5년
+            </div>
+          </div>
+          <div class="hb-stat-item">
+            <div class="hb-stat-icon">📏</div>
+            <div>
+              <div class="hb-stat-label">연간 절감 거리 (차량 ${vehicles}대)</div>
+              <div class="hb-stat-val">${Math.round(distSaved * monthTrips * 12 * vehicles).toLocaleString()} km</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footnote -->
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(0,229,160,0.12);font-size:0.7rem;color:var(--muted);line-height:1.6">
+        * 연비 절감률 <strong style="color:var(--text)">${pctSaved.toFixed(1)}%</strong>는 AI 최단경로 알고리즘 실제 계산값 · 편도 거리 기준 · 연비 ${fuelEff}km/L · 유가 ₩${fuelPrice.toLocaleString()}/L · 월 ${monthTrips}회 운행
+      </div>
+    </div>
+  `;
+  resultsArea.appendChild(sec3);
+
+  // ═══════════════════════════════════════════════════════════
+  // SECTION 4 · 차량 대수 슬라이더
+  // ═══════════════════════════════════════════════════════════
+  window._yearlySaving1  = yearly1v;
+  window._monthlySaving1 = monthlySaving1;
+  window._pctSaved       = pctSaved;
+  window._distSaved      = distSaved;
+  window._monthTrips     = monthTrips;
+
+  const sec4 = document.createElement('div');
+  sec4.style.animation = 'fadeUp 0.4s ease 0.3s both';
+  sec4.innerHTML = `
+    <div class="slider-box">
+      <div class="slider-header">
+        <div class="slider-title-row">
+          <span class="slider-icon">🚛</span>
+          <span class="slider-title">우리 회사 차량은 몇 대?</span>
+        </div>
+        <div class="slider-sub">슬라이더를 움직이면 절감액이 실시간으로 계산됩니다</div>
+      </div>
+
+      <div class="slider-track-wrap">
+        <div class="slider-labels-top">
+          <span>1대</span><span>10대</span><span>20대</span><span>30대</span><span>40대</span><span>50대</span>
+        </div>
+        <input type="range" id="vehicleSlider" class="vehicle-slider"
+          min="1" max="50" value="${vehicles}" step="1">
+        <div class="slider-thumb-label" id="sliderThumbLabel" style="left:${(vehicles-1)/49*100}%">
+          ${vehicles}대
+        </div>
+      </div>
+
+      <div class="slider-result" id="sliderResult">
+        <div class="sr-left">
+          <div class="sr-vehicle-count">차량 <span id="srVehicles">${vehicles}</span>대 기준</div>
+          <div class="sr-arrow">→</div>
+          <div class="sr-saving-wrap">
+            <div class="sr-saving-label">연간 절감 예상</div>
+            <div class="sr-saving-value" id="srYearly">${fmtWon(yearly1v * vehicles)}</div>
+          </div>
+        </div>
+        <div class="sr-right">
+          <div class="sr-stat">
+            <div class="sr-stat-label">월 절감액</div>
+            <div class="sr-stat-val" id="srMonthly">₩${Math.round(monthlySaving1 * vehicles).toLocaleString()}</div>
+          </div>
+          <div class="sr-divider"></div>
+          <div class="sr-stat">
+            <div class="sr-stat-label">5년 누적 절감</div>
+            <div class="sr-stat-val" id="sr5year">${fmtWon(yearly1v * vehicles * 5)}</div>
+          </div>
+          <div class="sr-divider"></div>
+          <div class="sr-stat">
+            <div class="sr-stat-label">연료비 절감률</div>
+            <div class="sr-stat-val" id="srPct">${pctSaved.toFixed(1)}%↓</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-bar-chart">
+        <div class="sbc-label">차량 규모별 5년 누적 절감 비교</div>
+        <div class="sbc-bars" id="sbcBars"></div>
+      </div>
+    </div>
+  `;
+  resultsArea.appendChild(sec4);
+
+  buildBarChart(vehicles, yearly1v);
+
+  const slider     = document.getElementById('vehicleSlider');
+  const thumbLabel = document.getElementById('sliderThumbLabel');
+
+  function updateSlider(v) {
+    const y1  = window._yearlySaving1;
+    const m1  = window._monthlySaving1;
+    const pct = window._pctSaved;
+    const pctPos = (v - 1) / 49 * 100;
+
+    slider.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${pctPos}%, var(--border) ${pctPos}%, var(--border) 100%)`;
+    thumbLabel.style.left    = pctPos + '%';
+    thumbLabel.textContent   = v + '대';
+
+    document.getElementById('srVehicles').textContent = v;
+    document.getElementById('srYearly').textContent   = fmtWon(y1 * v);
+    document.getElementById('srMonthly').textContent  = '₩' + Math.round(m1 * v).toLocaleString();
+    document.getElementById('sr5year').textContent    = fmtWon(y1 * v * 5);
+    document.getElementById('srPct').textContent      = pct.toFixed(1) + '%↓';
+    buildBarChart(v, y1);
+  }
+
+  updateSlider(vehicles);
+  slider.addEventListener('input', () => updateSlider(parseInt(slider.value)));
+
+  // Update header stats
+  optimizationCount++;
+  totalSaved += monthlySavingAll;
+  document.getElementById('hTotalRoutes').textContent = optimizationCount;
+  document.getElementById('hTotalSaved').textContent  = '₩' + Math.round(totalSaved / 10000) + '만';
+}
+
+// ── 금액 포맷: 억 단위 넘으면 억으로, 아니면 만원 ─────────────────────────
+function fmtWon(v) {
+  if (v >= 100000000) return '₩' + (v / 100000000).toFixed(2) + '억원';
+  return '₩' + Math.round(v / 10000).toLocaleString() + '만원';
+}
+
+function buildBarChart(activeV, yearlySaving1) {
+  const ticks = [1, 5, 10, 20, 30, 50];
+  const bars = document.getElementById('sbcBars');
+  if (!bars) return;
+  const maxVal = yearlySaving1 * 50 * 5;   // 5년 기준으로 최대값 설정
+  const closestActive = [...ticks].reverse().find(t => t <= activeV) || 1;
+  bars.innerHTML = ticks.map(v => {
+    const val       = yearlySaving1 * v * 5;  // 5년 누적
+    const heightPct = maxVal > 0 ? (val / maxVal * 100) : 0;
+    const highlight = (v === closestActive);
+    const label     = val >= 100000000
+      ? (val / 100000000).toFixed(1) + '억'
+      : Math.round(val / 10000) + '만';
+    return `
+      <div class="sbc-col">
+        <div class="sbc-val ${highlight ? 'active' : ''}">${label}</div>
+        <div class="sbc-bar-wrap">
+          <div class="sbc-bar ${highlight ? 'active' : ''}" style="height:${Math.max(4, heightPct)}%"></div>
+        </div>
+        <div class="sbc-tick ${highlight ? 'active' : ''}">${v}대</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── Default: deliberately non-optimal west↔east zigzag ─────────────────────
+// 기존 경로: 강서→해운대→부산신항→동래→감천→기장  (서↔동 교차 = 비효율)
+// 최적 경로: 강서→신항→감천→북항→남구→동래→수영→해운대→기장 (지역별 묶음)
+['강서구물류단지', '해운대물류센터', '부산신항', '동래구배송', '감천항', '기장군물류'].forEach(l => {
+  selectedLocations.push(l);
+});
+renderList();
+</script>
+</body>
+</html>
